@@ -1,0 +1,40 @@
+# Virtual environments
+myvenv/
+venv/
+.venv/
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+media/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test & coverage
+.pytest_cache/
+.coverage
+
+# Byte-compiled / optimized / DLL files
+*.so
+*.dylib
+
+# pip wheel cache
+pip-wheel-metadata/
+
+# Environment variables
+.env
