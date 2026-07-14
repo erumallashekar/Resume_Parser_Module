@@ -12,6 +12,8 @@ __pycache__/
 *.log
 local_settings.py
 db.sqlite3
+*.sqlite3
+*.db
 media/
 
 # Distribution / packaging
@@ -38,3 +40,4 @@ pip-wheel-metadata/
 
 # Environment variables
 .env
+.env.*
