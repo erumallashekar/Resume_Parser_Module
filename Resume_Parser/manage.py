@@ -2,6 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from django.db import migrations
 
 
 def main():
@@ -17,6 +18,28 @@ def main():
         ) from exc
     execute_from_command_line(sys.argv)
 
-
 if __name__ == '__main__':
     main()
+
+def seed_skills(apps, schema_editor):
+    Skill = apps.get_model('skill_suggestion', 'Skill')
+    skills = [
+        "Python", "Django", "REST API", "SQL", "Git",
+        "Machine Learning", "JavaScript", "React", "HTML", "CSS"
+    ]
+    for s in skills:
+        Skill.objects.get_or_create(name=s)
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('skill_suggestion', '0001_initial'),
+    ]
+
+    operations = [
+        migrations.RunPython(seed_skills),
+    ]
+
+
+
+

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'Resume_Parser_App.apps.ResumeParserAppConfig',
+    'skill_suggestion',
 ]
 
 MEDIA_URL = '/media/'

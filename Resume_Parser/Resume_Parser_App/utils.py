@@ -4,6 +4,7 @@ import spacy
 import re
 from pathlib import Path
 
+
 try:
     nlp = spacy.load("en_core_web_sm")
 except OSError:
