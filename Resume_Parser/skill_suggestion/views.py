@@ -3,6 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Skill
 from .serializers import skillserializer
+# Resume Match libraries
+from .utils import extract_text_from_pdf, match_resume_with_job
+from .models import CandidateResume, JobDescription, ResumeMatchResult
 
 class SkillSuggestionAPI(APIView):
     def get(self, request):
@@ -30,3 +33,47 @@ class SkillSuggestionAPI(APIView):
         serializer = skillserializer(suggestions, many=True)
 
         return Response({"suggested_skills": serializer.data}, status=status.HTTP_200_OK)
+
+#Resume Match Views 
+class ResumeMatchAPI(APIView):
+    def post(self, request):
+        job_description_text = request.data.get("job_description")
+        resume_file = request.FILES.get("resume")
+        candidate_name = request.data.get("name", "Unknown Candidate")
+
+        if not job_description_text or not resume_file:
+            return Response({"error": "Job description and resume file are required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Save job description
+        job = JobDescription.objects.create(title="Uploaded Job", description=job_description_text)
+
+        # Extract resume text
+        resume_text = extract_text_from_pdf(resume_file)
+
+        # Save candidate resume
+        candidate = CandidateResume.objects.create(
+            name=candidate_name,
+            resume_file=resume_file,
+            resume_text=resume_text
+        )
+
+        # Run match logic
+        match_percentage, matched, missing, summary = match_resume_with_job(resume_text, job_description_text)
+
+        # Save result
+        result = ResumeMatchResult.objects.create(
+            job=job,
+            candidate=candidate,
+            match_percentage=match_percentage,
+            matched_skills=", ".join(matched),
+            missing_skills=", ".join(missing),
+            summary=summary
+        )
+
+        return Response({
+            "match_percentage": result.match_percentage,
+            "matched_skills": matched,
+            "missing_skills": missing,
+            "summary": result.summary
+        }, status=status.HTTP_200_OK)
