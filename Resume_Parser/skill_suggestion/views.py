@@ -6,6 +6,7 @@ from .serializers import skillserializer
 # Resume Match libraries
 from .utils import extract_text_from_pdf, match_resume_with_job
 from .models import CandidateResume, JobDescription, ResumeMatchResult
+from .serializers import ResumeMatchResultSerializer
 
 class SkillSuggestionAPI(APIView):
     def get(self, request):
@@ -45,23 +46,17 @@ class ResumeMatchAPI(APIView):
             return Response({"error": "Job description and resume file are required."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # Save job description
         job = JobDescription.objects.create(title="Uploaded Job", description=job_description_text)
-
-        # Extract resume text
         resume_text = extract_text_from_pdf(resume_file)
 
-        # Save candidate resume
         candidate = CandidateResume.objects.create(
             name=candidate_name,
             resume_file=resume_file,
             resume_text=resume_text
         )
 
-        # Run match logic
         match_percentage, matched, missing, summary = match_resume_with_job(resume_text, job_description_text)
 
-        # Save result
         result = ResumeMatchResult.objects.create(
             job=job,
             candidate=candidate,
@@ -71,9 +66,5 @@ class ResumeMatchAPI(APIView):
             summary=summary
         )
 
-        return Response({
-            "match_percentage": result.match_percentage,
-            "matched_skills": matched,
-            "missing_skills": missing,
-            "summary": result.summary
-        }, status=status.HTTP_200_OK)
+        serializer = ResumeMatchResultSerializer(result)
+        return Response(serializer.data, status=status.HTTP_200_OK)
