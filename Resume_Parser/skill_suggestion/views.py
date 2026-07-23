@@ -8,6 +8,7 @@ from .utils import extract_text_from_pdf, match_resume_with_job
 from .models import CandidateResume, JobDescription, ResumeMatchResult
 from .serializers import ResumeMatchResultSerializer
 
+
 class SkillSuggestionAPI(APIView):
     def get(self, request):
         """
@@ -47,6 +48,8 @@ class ResumeMatchAPI(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
 
         job = JobDescription.objects.create(title="Uploaded Job", description=job_description_text)
+
+        resume_file = request.FILES.get("resume")
         resume_text = extract_text_from_pdf(resume_file)
 
         candidate = CandidateResume.objects.create(

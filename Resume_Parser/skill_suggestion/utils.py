@@ -1,15 +1,42 @@
 import spacy
-from PyPDF2 import PdfReader
+#from PyPDF2 import PdfReader
 from .models import Skill
+import pymupdf4llm
+import tempfile
+import fitz  # PyMuPDF
+import re
 
 nlp = spacy.load("en_core_web_sm")
 
-def extract_text_from_pdf(file_obj):
-    reader = PdfReader(file_obj)
+# def extract_text_from_pdf(file_obj):
+#     reader = PdfReader(file_obj)
+#     text = ""
+#     for page in reader.pages:
+#         text += page.extract_text() + " "
+#     return text
+
+def clean_markdown(md_text):
+    return re.sub(r'[#\-\*`]', '', md_text)
+
+def extract_text_from_pdf(file):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        for chunk in file.chunks():
+            tmp.write(chunk)
+        tmp_path = tmp.name
+
+    doc = fitz.open(tmp_path)
     text = ""
-    for page in reader.pages:
-        text += page.extract_text() + " "
-    return text
+    for page in doc:
+        text += page.get_text()
+
+          # Parse with pymupdf4llm Use OCR if needed
+    md_text = pymupdf4llm.to_markdown(tmp_path, ocr=True)
+
+    # Log first 1000 characters to console
+    # print("=== Parsed Resume Text Preview ===")
+    # print(md_text[:1000])
+    return clean_markdown(md_text)
+
 
 def match_resume_with_job(resume_text, job_text):
     resume_doc = nlp(resume_text.lower())
