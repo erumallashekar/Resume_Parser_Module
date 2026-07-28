@@ -2,7 +2,9 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from .utils import parse_resume
 from .models import Resume, PersonalInfo, Summary, Skill, Education, WorkExperience, Project, Certification, Language
+from .utils import extract_text_from_pdf
 from .serializers import (
     ResumeSerializer,
     PersonalInfoSerializer,
@@ -14,7 +16,7 @@ from .serializers import (
     CertificationSerializer,
     LanguageSerializer,
 )
-from .utils import parse_resume
+
 
 class PersonalInfoViewSet(viewsets.ModelViewSet):
     queryset = PersonalInfo.objects.all()
