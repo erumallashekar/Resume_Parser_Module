@@ -1,4 +1,5 @@
 from django.db import models
+from Resume_Parser_App.models import Resume 
 
 # Create your models here.
 class Skill(models.Model):
@@ -25,3 +26,20 @@ class ResumeMatchResult(models.Model):
     missing_skills = models.TextField()
     summary = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+class JobRecommendation(models.Model):
+    candidate = models.ForeignKey(CandidateResume, on_delete=models.CASCADE, null=True)
+    job = models.ForeignKey(JobDescription, on_delete=models.CASCADE)
+    score = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+
+#Resume Download History API 
+class ResumeDownloadHistory(models.Model):
+    resume = models.ForeignKey(Resume, on_delete=models.CASCADE, related_name="download_history")
+    download_date = models.DateTimeField(auto_now_add=True)
+    version = models.CharField(max_length=50, default="v1")
+
+    def __str__(self):
+        return f"{self.resume.file.name} downloaded on {self.download_date} (version {self.version})"

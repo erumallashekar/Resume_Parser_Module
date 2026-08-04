@@ -2,11 +2,19 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Skill
-from .serializers import skillserializer
+from .serializers import skillserializer, JobRecommendationSerializer
 # Resume Match libraries
-from .utils import extract_text_from_pdf, match_resume_with_job
-from .models import CandidateResume, JobDescription, ResumeMatchResult
+from .utils import extract_text_from_pdf, match_resume_with_job, recommend_jobs
+from .models import CandidateResume, JobDescription, ResumeMatchResult, JobDescription, JobRecommendation
 from .serializers import ResumeMatchResultSerializer
+# ResumeDownloadAPI
+from .models import ResumeDownloadHistory
+from .serializers import ResumeDownloadHistorySerializer
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.http import FileResponse
+
 
 class SkillSuggestionAPI(APIView):
     def get(self, request):
@@ -34,42 +42,6 @@ class SkillSuggestionAPI(APIView):
         serializer = skillserializer(suggestions, many=True)
 
         return Response({"suggested_skills": serializer.data}, status=status.HTTP_200_OK)
-
-#Resume Match Views 
-# class ResumeMatchAPI(APIView):
-#     def post(self, request):
-#         job_description_text = request.data.get("job_description")
-#         resume_file = request.FILES.get("resume")
-#         candidate_name = request.data.get("name", "Unknown Candidate")
-
-#         if not job_description_text or not resume_file:
-#             return Response({"error": "Job description and resume file are required."},
-#                             status=status.HTTP_400_BAD_REQUEST)
-
-#         job = JobDescription.objects.create(title="Uploaded Job", description=job_description_text)
-
-#         resume_file = request.FILES.get("resume")
-#         resume_text = extract_text_from_pdf(resume_file)
-
-#         candidate = CandidateResume.objects.create(
-#             name=candidate_name,
-#             resume_file=resume_file,
-#             resume_text=resume_text
-#         )
-
-#         match_percentage, matched, missing, summary = match_resume_with_job(resume_text, job_description_text)
-
-#         result = ResumeMatchResult.objects.create(
-#             job=job,
-#             candidate=candidate,
-#             match_percentage=match_percentage,
-#             matched_skills=", ".join(matched),
-#             missing_skills=", ".join(missing),
-#             summary=summary
-#         )
-
-#         serializer = ResumeMatchResultSerializer(result)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # Resume Match process
@@ -129,3 +101,70 @@ class ResumeMatchAPI(APIView):
                 {"error": f"Failed to process resume match: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+# Job Recommendation API
+class JobRecommendationAPI(APIView):
+    def post(self, request):
+        candidate_id = request.data.get("candidate_id")
+        resume_text = request.data.get("resume_text")
+
+        if not candidate_id and not resume_text:
+            return Response(
+                {"error": "Either candidate_id or resume_text is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # If candidate_id is provided, fetch candidate resume
+            candidate = None
+            if candidate_id:
+                candidate = CandidateResume.objects.get(id=candidate_id)
+                resume_text = candidate.resume_text
+
+            # Run recommendation logic
+            recommended_jobs = recommend_jobs(resume_text)
+
+            # Save recommendations (optional)
+            results = []
+            for job, score in recommended_jobs:
+                rec = JobRecommendation.objects.create(
+                    candidate=candidate,
+                    job=job,
+                    score=score
+                )
+                results.append(rec)
+
+            serializer = JobRecommendationSerializer(results, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except CandidateResume.DoesNotExist:
+            return Response(
+                {"error": "Candidate not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to generate recommendations: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+#Resume Download History API 
+class ResumeDownloadHistoryViewSet(viewsets.ModelViewSet):
+    queryset = ResumeDownloadHistory.objects.all().order_by("-download_date")
+    serializer_class = ResumeDownloadHistorySerializer
+
+    @action(detail=True, methods=["get"], url_path="download")
+    def download_resume(self, request, pk=None):
+        resume = self.get_object()
+
+        # ✅ Record download history automatically
+        ResumeDownloadHistory.objects.create(
+            resume=resume,
+            version="v1"   # you can adjust versioning logic here
+        )
+
+        # ✅ Return the actual file as a download
+        response = FileResponse(open(resume.file.path, "rb"), as_attachment=True)
+        response["Content-Disposition"] = f'attachment; filename="{resume.file.name}"'
+        return response

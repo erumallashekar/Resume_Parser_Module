@@ -4,6 +4,15 @@ import spacy
 import re
 from pathlib import Path
 
+import pdfplumber
+import pytesseract
+from PIL import Image
+import spacy
+import docx
+import re
+
+nlp = spacy.load("en_core_web_sm")
+
 try:
     nlp = spacy.load("en_core_web_sm")
 except OSError:
@@ -22,19 +31,38 @@ SECTION_HEADERS = {
 HEADER_PATTERN = re.compile(r"^[A-Za-z ]{2,100}$")
 
 
+# def extract_text_from_pdf(file_path):
+#     text = ""
+#     with pdfplumber.open(file_path) as pdf:
+#         for page in pdf.pages:
+#             page_text = page.extract_text()
+#             if page_text:
+#                 text += page_text + "\n"
+#     return text.strip()
+
+
+
 def extract_text_from_pdf(file_path):
     text = ""
     with pdfplumber.open(file_path) as pdf:
         for page in pdf.pages:
             page_text = page.extract_text()
-            if page_text:
+            if page_text:  # normal text PDF
                 text += page_text + "\n"
-    return text.strip()
-
+            else:  # scanned image PDF
+                pil_image = page.to_image(resolution=300).original
+                ocr_text = pytesseract.image_to_string(pil_image)
+                text += ocr_text + "\n"
+    return text
 
 def extract_text_from_docx(file_path):
     doc = docx.Document(file_path)
     return "\n".join([para.text for para in doc.paragraphs]).strip()
+
+
+# def extract_text_from_docx(file_path):
+#     doc = docx.Document(file_path)
+#     return "\n".join([para.text for para in doc.paragraphs]).strip()
 
 
 def extract_text_from_txt(file_path):

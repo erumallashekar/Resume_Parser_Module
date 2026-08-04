@@ -19,6 +19,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from Resume_Parser_App.views import ResumeViewSet, PersonalInfoViewSet, SummaryViewSet, SkillViewSet, EducationViewSet, WorkExperienceViewSet, ProjectViewSet, CertificationViewSet, LanguageViewSet
 from django.contrib import admin  
+from rest_framework import routers
+from skill_suggestion.views import ResumeDownloadHistoryViewSet
 
 router = DefaultRouter()
 router.register(r"resumes", ResumeViewSet)
@@ -30,9 +32,13 @@ router.register(r"work-experience", WorkExperienceViewSet)
 router.register(r"projects", ProjectViewSet)
 router.register(r"certifications", CertificationViewSet)
 router.register(r"languages", LanguageViewSet)
+router.register(r"download-history", ResumeDownloadHistoryViewSet)
+
+urlpatterns = router.urls
 
 urlpatterns = [
     path('admin/', admin.site.urls), 
     path("", include(router.urls)),
     path('api/', include('skill_suggestion.urls')),
 ]
+

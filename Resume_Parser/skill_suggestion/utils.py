@@ -1,10 +1,11 @@
 import spacy
-from .models import Skill
+from .models import Skill, JobDescription
 import pymupdf4llm
 import tempfile
 import fitz  # PyMuPDF
 import re
 import threading
+from .models import ResumeDownloadHistory
 
 
 nlp = spacy.load("en_core_web_sm")
@@ -59,3 +60,27 @@ def match_resume_with_job(resume_text, job_text):
     summary = f"Resume matches {match_percentage:.2f}% of required skills."
 
     return match_percentage, matched, missing, summary
+
+def recommend_jobs(resume_text):
+    """
+    Simple baseline: recommend jobs based on skill overlap.
+    Returns a list of (job, score).
+    """
+    jobs = JobDescription.objects.all()
+    recommendations = []
+
+    resume_words = set(resume_text.lower().split())
+
+    for job in jobs:
+        job_words = set(job.description.lower().split())
+        overlap = resume_words.intersection(job_words)
+        score = len(overlap) / max(len(job_words), 1)
+        recommendations.append((job, score))
+
+    # Sort by score descending
+    recommendations.sort(key=lambda x: x[1], reverse=True)
+    return recommendations[:5]  # top 5 jobs
+    
+
+def record_download(resume, version="v1"):
+    ResumeDownloadHistory.objects.create(resume=resume, version=version)

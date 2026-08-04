@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Skill
 #Resume Match 
-from .models import Skill, JobDescription, CandidateResume, ResumeMatchResult
+from .models import Skill, JobDescription, CandidateResume, ResumeMatchResult, JobRecommendation, ResumeDownloadHistory
 
 class skillserializer(serializers.ModelSerializer):
     class Meta:
@@ -34,3 +34,14 @@ class ResumeMatchResultSerializer(serializers.ModelSerializer):
             "summary",
             "created_at",
         ]
+
+class JobRecommendationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobRecommendation
+        fields = ["id", "candidate", "job", "score", "created_at"]
+
+#Resume Download History API 
+class ResumeDownloadHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResumeDownloadHistory
+        fields = ["id", "resume", "download_date", "version"]
